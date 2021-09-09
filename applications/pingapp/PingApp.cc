@@ -72,6 +72,7 @@ const std::map<const Protocol *, const Protocol *> PingApp::l3Echo( {
     { &Protocol::nextHopForwarding, &Protocol::echo },
     { &Protocol::probabilistic, &Protocol::echo },
     { &Protocol::wiseRoute, &Protocol::echo },
+    { &Protocol::tarpf, &Protocol::echo },
 });
 
 PingApp::PingApp()
