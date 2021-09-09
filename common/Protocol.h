@@ -133,6 +133,10 @@ class INET_API Protocol
     static const Protocol shortcutPhy;
     static const Protocol unitDisk;
     static const Protocol wiseRoute;
+
+    //TARP protocol identifiers
+    static const Protocol tarpf;
+
 };
 
 inline std::ostream& operator << (std::ostream& o, const Protocol& t) { o << t.str(); return o; }

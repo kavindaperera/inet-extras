@@ -157,5 +157,8 @@ const Protocol Protocol::shortcutPhy("shortcutphy", "Shortcut PHY", Protocol::Ph
 const Protocol Protocol::unitDisk("unitdisk", "UnitDisk");
 const Protocol Protocol::wiseRoute("wiseroute", "WiseRoute"); // WiseRoute Network Protocol
 
+// TARP protocol identifiers
+const Protocol Protocol::tarpf("tarpf", "TarpF", Protocol::NetworkLayer);
+
 } // namespace inet
 
