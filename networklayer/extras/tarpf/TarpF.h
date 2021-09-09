@@ -37,8 +37,49 @@ namespace inet {
  */
 class INET_API TarpF : public NetworkProtocolBase, public INetworkProtocol
 {
-    public:
+    protected:
 
+    /** @brief Network layer sequence number*/
+    unsigned long seqNum = 0;
+
+    /** @brief cached variable of my networ address */
+    L3Address myNetwAddr;
+
+    /** @brief Default time-to-live (ttl) used for this module*/
+    int defaultTtl = 0;
+
+    /** @brief Defines whether to use plain flooding or not*/
+    bool plainFlooding = false;
+
+    class Bcast
+    {
+        public:
+            unsigned long seqNum;
+            L3Address srcAddr;
+            simtime_t delTime;
+
+    };
+
+    typedef std::list<Bcast> cTarpCache;
+
+    /** @brief List of already broadcasted messages*/
+    cTarpCache ddCache;
+
+    /** @brief Max number of entries in the duplicate discard cache*/
+    unsigned int ddMaxEntries = 0;
+
+    /** @brief MTime after which a duplicate discard cache entry can be deleted*/
+    simtime_t ddDelTime;
+
+
+    long nbDataPacketsReceived = 0;
+    long nbDataPacketsSent = 0;
+    long nbDataPacketsForwarded = 0;
+    long nbHops = 0;
+
+
+    public:
+        TarpF() {}
 
         /** @brief Initialization of omnetpp.ini parameters*/
         virtual int numInitStages() const override { return NUM_INIT_STAGES; }

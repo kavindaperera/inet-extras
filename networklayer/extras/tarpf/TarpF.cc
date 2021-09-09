@@ -11,8 +11,15 @@
 // 
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see http://www.gnu.org/licenses/.
+//
+// @author Kavinda Perera
 // 
 
+#include "inet/common/ProtocolTag_m.h"
+#include "inet/linklayer/common/MacAddressTag_m.h"
+#include "inet/networklayer/common/HopLimitTag_m.h"
+#include "inet/networklayer/common/L3AddressTag_m.h"
+#include "inet/networklayer/contract/IL3AddressType.h"
 #include "inet/networklayer/extras/tarpf/TarpF.h"
 
 namespace inet {
@@ -24,27 +31,62 @@ Define_Module(TarpF);
 void TarpF::initialize(int stage)
 {
     NetworkProtocolBase::initialize(stage);
-    // TODO - Generated method body
+    if (stage == INITSTAGE_LOCAL ) {
+        // initialize sequence number to 0
+        seqNum = 0;
+        nbDataPacketsReceived = 0;
+        nbDataPacketsSent = 0;
+        nbDataPacketsForwarded = 0;
+        nbHops = 0;
+
+        //parameters
+        defaultTtl = par("defaultTtl");
+        plainFlooding = par("plainFlooding");
+
+        EV << "defaultTtl = " << defaultTtl << " plainFlooding = " << plainFlooding << endl;
+
+        if (plainFlooding) {
+            // settings duplicate discard cache parameters
+            ddMaxEntries = par("ddMaxEntries");
+            ddDelTime = par("ddDelTime");
+            EV << "ddMaxEntries = " << ddMaxEntries << " ddDelTime = " << ddDelTime << endl;
+        }
+
+    } else if (stage == INITSTAGE_NETWORK_LAYER) {
+        auto ie = interfaceTable->findFirstNonLoopbackInterface();
+        if (ie != nullptr)
+            myNetwAddr = ie->getNetworkAddress();
+        else
+            throw cRuntimeError("No non-loopback interface found!");
+    }
+
 }
 
 void TarpF::finish()
 {
     // TODO - Generated method body
+    throw cRuntimeError("Debug!.....finish");
 }
 
 void TarpF::handleUpperPacket(Packet *packet)
 {
+    encapsulate(packet);
+
     // TODO - Generated method body
+
+    throw cRuntimeError("Debug!.....handleUpperPacket");
 }
 
 void TarpF::handleLowerPacket(Packet *packet)
 {
     // TODO - Generated method body
+    throw cRuntimeError("Debug!.....handleLowerPacket");
 }
 
 bool TarpF::notBroadcasted(const TarpFHeader *msg)
 {
     // TODO - Generated method body
+    throw cRuntimeError("Debug!.....notBroadcasted");
     return true;
 }
 
