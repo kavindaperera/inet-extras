@@ -27,5 +27,9 @@ simple TarpF extends NetworkProtocolBase like INetworkProtocol
 {
     parameters:
         @display("i=block/fork");
+        int ddMaxEntries = default(100); // Max number of entries in the duplicate discard cache
+        int ddDelTime @unit(s) = default(100 s); // Time after which a uplicate discard cache entry can be deleted.
+        int defaultTtl = default(10); // time-to-live (ttl) used for this module expressed in  number of hops.
+        @class(TarpF);
         
 }
