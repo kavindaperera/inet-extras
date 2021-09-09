@@ -13,20 +13,56 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-#include "../tarpf/TarpF.h"
+#include "inet/networklayer/extras/tarpf/TarpF.h"
 
 namespace inet {
 
+using std::endl;
+
 Define_Module(TarpF);
 
-void TarpF::initialize()
+void TarpF::initialize(int stage)
+{
+    NetworkProtocolBase::initialize(stage);
+    // TODO - Generated method body
+}
+
+void TarpF::finish()
 {
     // TODO - Generated method body
 }
 
-void TarpF::handleMessage(cMessage *msg)
+void TarpF::handleUpperPacket(Packet *packet)
 {
     // TODO - Generated method body
 }
 
-} //namespace
+void TarpF::handleLowerPacket(Packet *packet)
+{
+    // TODO - Generated method body
+}
+
+bool TarpF::notBroadcasted(const TarpFHeader *msg)
+{
+    // TODO - Generated method body
+    return true;
+}
+
+/**
+ * Decapsulates the packet from the received Network packet
+ **/
+void TarpF::decapsulate(Packet *packet)
+{
+    // TODO - Generated method body
+}
+
+/**
+ * Encapsulates the received ApplPkt into a NetwPkt and set all needed
+ * header fields.
+ **/
+void TarpF::encapsulate(Packet *appPkt)
+{
+    // TODO - Generated method body
+}
+
+} //namespace inet

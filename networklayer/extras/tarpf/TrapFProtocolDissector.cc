@@ -1,9 +1,8 @@
-/*
- * TrapFProtocolDissector.cc
- *
- *  Created on: Sep 9, 2021
- *      Author: KAVINDA
- */
+//
+// TODO auto-generated module
+//
+// @author Kavinda Perera
+//
 
 
 #include "inet/common/packet/dissector/ProtocolDissectorRegistry.h"

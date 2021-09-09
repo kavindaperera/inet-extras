@@ -13,12 +13,6 @@
 // along with this program.  If not, see http://www.gnu.org/licenses/.
 // 
 
-//
-// TODO auto-generated module
-//
-// @author Kavinda Perera
-//
-
 import inet.common.INETDefs;
 import inet.common.Units;
 import inet.networklayer.contract.NetworkHeaderBase;

@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by nedtool 5.6 from inet/networklayer/extras/tarpf/TarpFHeader.msg.
+// Generated file, do not edit! Created by nedtool 5.6 from inet/networklayer/extras/tarpf/../tarpf/TarpFHeader.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -27,7 +27,7 @@
 #include <iostream>
 #include <sstream>
 #include <memory>
-#include "../tarpf/TarpFHeader_m.h"
+#include "TarpFHeader_m.h"
 
 namespace omnetpp {
 

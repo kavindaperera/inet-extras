@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by nedtool 5.6 from inet/networklayer/extras/tarpf/TarpFHeader.msg.
+// Generated file, do not edit! Created by nedtool 5.6 from inet/networklayer/extras/tarpf/../tarpf/TarpFHeader.msg.
 //
 
 #ifndef __INET_TARPFHEADER_M_H
@@ -51,7 +51,7 @@ class TarpFHeader;
 namespace inet {
 
 /**
- * Class generated from <tt>inet/networklayer/extras/tarpf/TarpFHeader.msg:35</tt> by nedtool.
+ * Class generated from <tt>inet/networklayer/extras/tarpf/../tarpf/TarpFHeader.msg:29</tt> by nedtool.
  * <pre>
  * class TarpFHeader extends NetworkHeaderBase
  * {

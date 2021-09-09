@@ -16,22 +16,61 @@
 #ifndef __INET_TARPF_H_
 #define __INET_TARPF_H_
 
-#include <omnetpp.h>
+#include <list>
 
-using namespace omnetpp;
+#include "inet/common/packet/Packet.h"
+#include "inet/networklayer/base/NetworkProtocolBase.h"
+#include "inet/networklayer/common/L3Address.h"
+#include "inet/networklayer/contract/INetworkProtocol.h"
+#include "inet/networklayer/extras/tarpf/TarpFHeader_m.h"
 
 namespace inet {
 
 /**
+ * @brief A controlled flooding protocol
+ *
  * TODO - Generated class
+ *
+ * @ingroup netwLayer
+ * @author Kavinda Perera
+ *
  */
-class TarpF : public cSimpleModule
+class INET_API TarpF : public NetworkProtocolBase, public INetworkProtocol
 {
-  protected:
-    virtual void initialize();
-    virtual void handleMessage(cMessage *msg);
+    public:
+
+
+        /** @brief Initialization of omnetpp.ini parameters*/
+        virtual int numInitStages() const override { return NUM_INIT_STAGES; }
+
+        virtual void initialize(int) override;
+
+        virtual void finish() override;
+
+        const Protocol& getProtocol() const override { return Protocol::tarpf; }
+
+    protected:
+
+        /** @brief Handle messages from upper layer */
+        virtual void handleUpperPacket(Packet *packet) override;
+
+        /** @brief Handle messages from lower layer */
+        virtual void handleLowerPacket(Packet *packet) override;
+
+        /** @brief Checks whether a message was already broadcasted*/
+        bool notBroadcasted(const TarpFHeader *);
+
+        void decapsulate(Packet *packet);
+        void encapsulate(Packet *packet);
+
+
+        // OperationalBase:
+        virtual void handleStartOperation(LifecycleOperation *operation) override {}    //TODO implementation
+        virtual void handleStopOperation(LifecycleOperation *operation) override {}    //TODO implementation
+        virtual void handleCrashOperation(LifecycleOperation *operation) override {}    //TODO implementation
+
 };
 
-} //namespace
+} //namespace inet
 
 #endif
