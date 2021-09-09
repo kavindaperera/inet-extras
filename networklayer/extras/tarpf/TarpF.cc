@@ -34,12 +34,15 @@ void TarpF::initialize(int stage)
     if (stage == INITSTAGE_LOCAL ) {
         // initialize sequence number to 0
         seqNum = 0;
+
+        // statistics
         nbDataPacketsReceived = 0;
         nbDataPacketsSent = 0;
         nbDataPacketsForwarded = 0;
         nbHops = 0;
 
         //parameters
+        headerLength = par("headerLength");
         defaultTtl = par("defaultTtl");
         plainFlooding = par("plainFlooding");
 
@@ -71,6 +74,14 @@ void TarpF::finish()
 void TarpF::handleUpperPacket(Packet *packet)
 {
     encapsulate(packet);
+
+    auto tarpfHeader = packet->peekAtFront<TarpFHeader>();
+
+    if (plainFlooding) {
+
+        // TODO - check and update DD cache
+
+    }
 
     // TODO - Generated method body
 
@@ -104,7 +115,54 @@ void TarpF::decapsulate(Packet *packet)
  **/
 void TarpF::encapsulate(Packet *appPkt)
 {
+    L3Address netwAddr;
+
+    EV << " encapsulating.."<< appPkt << endl;
+
+    auto cInfo = appPkt->removeControlInfo();
+    auto pkt = makeShared<TarpFHeader>();
+    pkt->setChunkLength(b(headerLength));
+
+    auto hopLimitReq = appPkt->removeTagIfPresent<HopLimitReq>();
+    int ttl = (hopLimitReq != nullptr) ? hopLimitReq->getHopLimit() : -1;
+    delete hopLimitReq;
+    if (ttl == -1)
+            ttl = defaultTtl;
+
+    pkt->setSeqNum(seqNum);
+    seqNum++;
+    pkt->setTtl(ttl);
+
+    auto addressReq = appPkt->findTag<L3AddressReq>();
+    if (addressReq == nullptr) {
+        EV << "warning: Application layer did not specify a destination L3 address\n"
+                << "\t using broadcast address instead\n";
+    }
+    else {
+        pkt->setProtocol(appPkt->getTag<PacketProtocolTag>()->getProtocol());
+        netwAddr = addressReq->getDestAddress();
+        EV << " cInfo removed, netw addr=" << netwAddr << endl;
+        delete cInfo;
+    }
+
+    pkt->setSrcAddr(myNetwAddr);
+    pkt->setDestAddr(netwAddr);
+
+    EV << " pkt: seqNum=" << pkt->getSeqNum()
+                   << " ttl=" << pkt->getTtl()
+                   << " srcAddr=" << pkt->getSrcAddr()
+                   << " destAddr=" << pkt->getDestAddr()
+                   << endl;
+
+    EV << " netw " << myNetwAddr << " sending packet" << endl;
+
+
     // TODO - Generated method body
+
+    appPkt->insertAtFront(pkt);
+    EV << " pkt encapsulated\n";
+
+
 }
 
 } //namespace inet

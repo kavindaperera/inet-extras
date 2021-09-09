@@ -30,6 +30,9 @@ simple TarpF extends NetworkProtocolBase like INetworkProtocol
     parameters:
         @display("i=block/fork");
         
+        // length of the network packet header (in bits)
+        int headerLength @unit(b) = default(96b); 
+        
         // flag whether to use plain flooding
         bool plainFlooding = default(true); 
         

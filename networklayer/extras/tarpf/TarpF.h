@@ -45,6 +45,9 @@ class INET_API TarpF : public NetworkProtocolBase, public INetworkProtocol
     /** @brief cached variable of my networ address */
     L3Address myNetwAddr;
 
+    /** @brief Length of the header*/
+    int headerLength = 0;
+
     /** @brief Default time-to-live (ttl) used for this module*/
     int defaultTtl = 0;
 
