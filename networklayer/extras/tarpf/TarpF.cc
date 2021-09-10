@@ -139,8 +139,8 @@ void TarpF::handleLowerPacket(Packet *packet) {
             if (tarpfHeader->getTtl() > 1) {
                 EV << " data msg not for me! ttl = " << tarpfHeader->getTtl()
                         << " > 1 -> forward" << endl;
+                decapsulate(packet);
 
-                // TODO - call decapsulate
 
             }
         }
@@ -188,7 +188,32 @@ bool TarpF::notBroadcasted(const TarpFHeader *msg) {
  * Decapsulates the packet from the received Network packet
  **/
 void TarpF::decapsulate(Packet *packet) {
-    // TODO - Generated method body
+
+    EV << " decapsulating...\n";
+
+    auto tarpfHeader = packet->popAtFront<TarpFHeader>();
+    auto payloadLength = tarpfHeader->getPayloadLengthField();
+    if (packet->getDataLength() < payloadLength) {
+        throw cRuntimeError("Data error: illegal payload length");
+    }
+    if (packet->getDataLength() > payloadLength)
+        packet->setBackOffset(packet->getFrontOffset() + payloadLength);
+
+    auto payloadProtocol = tarpfHeader->getProtocol();
+
+    packet->addTagIfAbsent<NetworkProtocolInd>()->setProtocol(&getProtocol());
+    packet->addTagIfAbsent<NetworkProtocolInd>()->setNetworkProtocolHeader(tarpfHeader);
+    packet->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(payloadProtocol);
+    packet->addTagIfAbsent<PacketProtocolTag>()->setProtocol(payloadProtocol);
+
+    auto addressInd = packet->addTagIfAbsent<L3AddressInd>();
+
+    addressInd->setSrcAddress(tarpfHeader->getSourceAddress());
+    addressInd->setDestAddress(tarpfHeader->getDestinationAddress());
+    packet->addTagIfAbsent<HopLimitInd>()->setHopLimit(tarpfHeader->getTtl());
+
+    EV << " pkt decapsulated\n";
+
 }
 
 /**
