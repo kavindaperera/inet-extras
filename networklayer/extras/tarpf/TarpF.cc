@@ -67,8 +67,18 @@ void TarpF::initialize(int stage) {
 }
 
 void TarpF::finish() {
-    // TODO - Generated method body
-    throw cRuntimeError("Debug!.....finish");
+    if (plainFlooding) {
+        ddCache.clear();
+    }
+    recordScalar("nbDataPacketsReceived", nbDataPacketsReceived);
+    recordScalar("nbDataPacketsSent", nbDataPacketsSent);
+    recordScalar("nbDataPacketsForwarded", nbDataPacketsForwarded);
+    if (nbDataPacketsReceived > 0) {
+        recordScalar("meanNbHops",
+                (double) nbHops / (double) nbDataPacketsReceived);
+    } else {
+        recordScalar("meanNbHops", 0);
+    }
 }
 
 void TarpF::handleUpperPacket(Packet *packet) {
@@ -111,18 +121,16 @@ void TarpF::handleLowerPacket(Packet *packet) {
 
     auto tarpfHeader = packet->peekAtFront<TarpFHeader>();
 
-    if(notBroadcasted(tarpfHeader.get())) {
+    if (notBroadcasted(tarpfHeader.get())) {
 
         EV << " data msg not BROADCASTed! \n";
 
-    }
-    else {
+    } else {
 
         EV << " data msg already BROADCASTed! delete msg\n";
 
         delete packet;
     }
-
 
     // TODO - Generated method body
 
@@ -134,17 +142,17 @@ bool TarpF::notBroadcasted(const TarpFHeader *msg) {
         return true;
 
     // search ddCacahe for out-dated entries and delete them
-    for (auto it = ddCache.begin(); it != ddCache.end(); ) {
+    for (auto it = ddCache.begin(); it != ddCache.end();) {
         if (it->delTime < simTime()) {
             it = ddCache.erase(it);
         }
         // message was already broadcasted
-        else if ((it->srcAddr == msg->getSourceAddress()) && (it->seqNum == msg->getSeqNum())) {
+        else if ((it->srcAddr == msg->getSourceAddress())
+                && (it->seqNum == msg->getSeqNum())) {
             // update
             it->delTime = simTime() + ddDelTime;
             return false;
-        }
-        else
+        } else
             ++it;
     }
 
@@ -154,7 +162,9 @@ bool TarpF::notBroadcasted(const TarpFHeader *msg) {
         ddCache.pop_front();
     }
 
-    ddCache.push_back(Bcast(msg->getSeqNum(), msg->getSourceAddress(), simTime() + ddDelTime));
+    ddCache.push_back(
+            Bcast(msg->getSeqNum(), msg->getSourceAddress(),
+                    simTime() + ddDelTime));
     return true;
 }
 
