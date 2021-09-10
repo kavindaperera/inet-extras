@@ -82,8 +82,8 @@ void TarpF::finish() {
 }
 
 void TarpF::handleUpperPacket(Packet *packet) {
-    encapsulate(packet);
 
+    encapsulate(packet);
     auto tarpfHeader = packet->peekAtFront<TarpFHeader>();
 
     if (plainFlooding) {
@@ -123,8 +123,9 @@ void TarpF::handleLowerPacket(Packet *packet) {
 
     if (notBroadcasted(tarpfHeader.get())) {
 
-        // TODO - if msg is for me -> sendUp
-        if (interfaceTable->isLocalAddress(tarpfHeader->getDestinationAddress())) {
+        // if msg is for me -> sendUp
+        if (interfaceTable->isLocalAddress(
+                tarpfHeader->getDestinationAddress())) {
 
             EV << " data msg for me! send to Upper" << endl;
             nbHops = nbHops + (defaultTtl + 1 - tarpfHeader->getTtl());
@@ -133,23 +134,47 @@ void TarpF::handleLowerPacket(Packet *packet) {
             nbDataPacketsReceived++;
         }
 
-        // TODO - else if broadcast message
+        // else if broadcast message
         else if (tarpfHeader->getDestinationAddress().isBroadcast()) {
+
+            // check ttl and rebroadcast
+            if (tarpfHeader->getTtl() > 1) {
+                EV << " data msg BROADCAST! ttl = " << tarpfHeader->getTtl()
+                          << " > 1 -> rebroadcast msg & send to upper\n";
+
+                auto dMsg = packet->dup();
+                auto newTarpFHeader = dMsg->removeAtFront<TarpFHeader>();
+                newTarpFHeader->setTtl(newTarpFHeader->getTtl() - 1);
+                dMsg->insertAtFront(newTarpFHeader);
+                setDownControlInfo(dMsg, MacAddress::BROADCAST_ADDRESS);
+                sendDown(dMsg);
+                nbDataPacketsForwarded++;
+            } else
+                EV << " max hops reached (ttl = " << tarpfHeader->getTtl()
+                          << ") -> only send to upper\n";
+
+            // message has to be forwarded to upper layer
+            nbHops = nbHops + (defaultTtl + 1 - tarpfHeader->getTtl());
+            decapsulate(packet);
+            sendUp(packet);
+            nbDataPacketsReceived++;
 
         }
 
-        // TODO - else not for me -> rebroadcast
+        // else not for me -> rebroadcast
         else {
             // check ttl and rebroadcast
             if (tarpfHeader->getTtl() > 1) {
                 EV << " data msg not for me! ttl = " << tarpfHeader->getTtl()
-                        << " > 1 -> forward" << endl;
+                          << " > 1 -> forward" << endl;
                 decapsulate(packet);
 
                 auto packetCopy = new Packet();
-                packetCopy->insertAtBack(packet->peekDataAt(b(0), packet->getDataLength()));
+                packetCopy->insertAtBack(
+                        packet->peekDataAt(b(0), packet->getDataLength()));
 
-                auto tarpfHeaderCopy = staticPtrCast<TarpFHeader>(tarpfHeader->dupShared());
+                auto tarpfHeaderCopy = staticPtrCast<TarpFHeader>(
+                        tarpfHeader->dupShared());
                 tarpfHeaderCopy->setTtl(tarpfHeader->getTtl() - 1);
 
                 packetCopy->insertAtFront(tarpfHeaderCopy);
@@ -163,10 +188,10 @@ void TarpF::handleLowerPacket(Packet *packet) {
                 sendDown(packetCopy);
                 nbDataPacketsForwarded++;
                 delete packet;
-            }
-            else {
+            } else {
                 // max hops reached -> delete
-                EV << " max hops reached (ttl = " << tarpfHeader->getTtl() << ") -> delete msg\n";
+                EV << " max hops reached (ttl = " << tarpfHeader->getTtl()
+                          << ") -> delete msg\n";
                 delete packet;
             }
         }
@@ -228,7 +253,8 @@ void TarpF::decapsulate(Packet *packet) {
     auto payloadProtocol = tarpfHeader->getProtocol();
 
     packet->addTagIfAbsent<NetworkProtocolInd>()->setProtocol(&getProtocol());
-    packet->addTagIfAbsent<NetworkProtocolInd>()->setNetworkProtocolHeader(tarpfHeader);
+    packet->addTagIfAbsent<NetworkProtocolInd>()->setNetworkProtocolHeader(
+            tarpfHeader);
     packet->addTagIfAbsent<DispatchProtocolReq>()->setProtocol(payloadProtocol);
     packet->addTagIfAbsent<PacketProtocolTag>()->setProtocol(payloadProtocol);
 
