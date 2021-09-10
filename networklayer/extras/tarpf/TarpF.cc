@@ -140,7 +140,7 @@ void TarpF::handleLowerPacket(Packet *packet) {
 
         // TODO - else not for me -> rebroadcast
         else {
-            // TODO - check ttl and rebroadcast
+            // check ttl and rebroadcast
             if (tarpfHeader->getTtl() > 1) {
                 EV << " data msg not for me! ttl = " << tarpfHeader->getTtl()
                         << " > 1 -> forward" << endl;
@@ -163,7 +163,11 @@ void TarpF::handleLowerPacket(Packet *packet) {
                 sendDown(packetCopy);
                 nbDataPacketsForwarded++;
                 delete packet;
-
+            }
+            else {
+                // max hops reached -> delete
+                EV << " max hops reached (ttl = " << tarpfHeader->getTtl() << ") -> delete msg\n";
+                delete packet;
             }
         }
 
