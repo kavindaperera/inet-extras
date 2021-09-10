@@ -28,10 +28,9 @@ using std::endl;
 
 Define_Module(TarpF);
 
-void TarpF::initialize(int stage)
-{
+void TarpF::initialize(int stage) {
     NetworkProtocolBase::initialize(stage);
-    if (stage == INITSTAGE_LOCAL ) {
+    if (stage == INITSTAGE_LOCAL) {
         // initialize sequence number to 0
         seqNum = 0;
 
@@ -46,13 +45,15 @@ void TarpF::initialize(int stage)
         defaultTtl = par("defaultTtl");
         plainFlooding = par("plainFlooding");
 
-        EV << "defaultTtl = " << defaultTtl << " plainFlooding = " << plainFlooding << endl;
+        EV << "defaultTtl = " << defaultTtl << " plainFlooding = "
+                  << plainFlooding << endl;
 
         if (plainFlooding) {
             // settings duplicate discard cache parameters
             ddMaxEntries = par("ddMaxEntries");
             ddDelTime = par("ddDelTime");
-            EV << "ddMaxEntries = " << ddMaxEntries << " ddDelTime = " << ddDelTime << endl;
+            EV << "ddMaxEntries = " << ddMaxEntries << " ddDelTime = "
+                      << ddDelTime << endl;
         }
 
     } else if (stage == INITSTAGE_NETWORK_LAYER) {
@@ -65,37 +66,53 @@ void TarpF::initialize(int stage)
 
 }
 
-void TarpF::finish()
-{
+void TarpF::finish() {
     // TODO - Generated method body
     throw cRuntimeError("Debug!.....finish");
 }
 
-void TarpF::handleUpperPacket(Packet *packet)
-{
+void TarpF::handleUpperPacket(Packet *packet) {
     encapsulate(packet);
 
     auto tarpfHeader = packet->peekAtFront<TarpFHeader>();
 
     if (plainFlooding) {
+        // check and update DD cache
 
-        // TODO - check and update DD cache
+        if (ddCache.size() >= ddMaxEntries) {
+            // search and delete out-dated messages
+            for (auto it = ddCache.begin(); it != ddCache.end();) {
+                if (it->delTime < simTime())
+                    it = ddCache.erase(it);
+                else
+                    ++it;
+
+            }
+
+            // delete oldest entry if still max size reached
+            if (ddCache.size() >= ddMaxEntries) {
+                EV << "ddCache is full, delete oldest entry" << endl;
+                ddCache.pop_front();
+            }
+        }
+
+        ddCache.push_back(
+                Bcast(tarpfHeader->getSeqNum(), tarpfHeader->getSourceAddress(),
+                        simTime() + ddDelTime));
 
     }
 
-    // TODO - Generated method body
-
-    throw cRuntimeError("Debug!.....handleUpperPacket");
+    // send to broadcast
+    sendDown(packet);
+    nbDataPacketsSent++;
 }
 
-void TarpF::handleLowerPacket(Packet *packet)
-{
+void TarpF::handleLowerPacket(Packet *packet) {
     // TODO - Generated method body
     throw cRuntimeError("Debug!.....handleLowerPacket");
 }
 
-bool TarpF::notBroadcasted(const TarpFHeader *msg)
-{
+bool TarpF::notBroadcasted(const TarpFHeader *msg) {
     // TODO - Generated method body
     throw cRuntimeError("Debug!.....notBroadcasted");
     return true;
@@ -104,8 +121,7 @@ bool TarpF::notBroadcasted(const TarpFHeader *msg)
 /**
  * Decapsulates the packet from the received Network packet
  **/
-void TarpF::decapsulate(Packet *packet)
-{
+void TarpF::decapsulate(Packet *packet) {
     // TODO - Generated method body
 }
 
@@ -113,11 +129,10 @@ void TarpF::decapsulate(Packet *packet)
  * Encapsulates the received ApplPkt into a NetwPkt and set all needed
  * header fields.
  **/
-void TarpF::encapsulate(Packet *appPkt)
-{
+void TarpF::encapsulate(Packet *appPkt) {
     L3Address netwAddr;
 
-    EV << " encapsulating.."<< appPkt << endl;
+    EV << " encapsulating.." << appPkt << endl;
 
     auto cInfo = appPkt->removeControlInfo();
     auto pkt = makeShared<TarpFHeader>();
@@ -127,7 +142,7 @@ void TarpF::encapsulate(Packet *appPkt)
     int ttl = (hopLimitReq != nullptr) ? hopLimitReq->getHopLimit() : -1;
     delete hopLimitReq;
     if (ttl == -1)
-            ttl = defaultTtl;
+        ttl = defaultTtl;
 
     pkt->setSeqNum(seqNum);
     seqNum++;
@@ -135,10 +150,10 @@ void TarpF::encapsulate(Packet *appPkt)
 
     auto addressReq = appPkt->findTag<L3AddressReq>();
     if (addressReq == nullptr) {
-        EV << "warning: Application layer did not specify a destination L3 address\n"
-                << "\t using broadcast address instead\n";
-    }
-    else {
+        EV
+                  << "warning: Application layer did not specify a destination L3 address\n"
+                  << "\t using broadcast address instead\n";
+    } else {
         pkt->setProtocol(appPkt->getTag<PacketProtocolTag>()->getProtocol());
         netwAddr = addressReq->getDestAddress();
         EV << " cInfo removed, netw addr=" << netwAddr << endl;
@@ -148,28 +163,32 @@ void TarpF::encapsulate(Packet *appPkt)
     pkt->setSrcAddr(myNetwAddr);
     pkt->setDestAddr(netwAddr);
 
-    EV << " pkt: seqNum=" << pkt->getSeqNum()
-                   << " ttl=" << pkt->getTtl()
-                   << " srcAddr=" << pkt->getSrcAddr()
-                   << " destAddr=" << pkt->getDestAddr()
-                   << endl;
+    EV << " pkt: seqNum=" << pkt->getSeqNum() << " ttl=" << pkt->getTtl()
+              << " srcAddr=" << pkt->getSrcAddr() << " destAddr="
+              << pkt->getDestAddr() << endl;
 
     EV << " netw " << myNetwAddr << " sending packet" << endl;
 
+    EV << "sendDown: nHop=L3BROADCAST -> message has to be broadcasted"
+              << " -> set destMac=L2BROADCAST" << endl;
+
+    pkt->setPayloadLengthField(appPkt->getDataLength());
+
+    //encapsulate the application packet
+    setDownControlInfo(appPkt, MacAddress::BROADCAST_ADDRESS);
 
     // TODO - Generated method body
 
     appPkt->insertAtFront(pkt);
     EV << " pkt encapsulated\n";
 
-
 }
 
 /**
  * Attaches a "control info" structure (object) to the down message pMsg.
  */
-void TarpF::setDownControlInfo(Packet *const pMsg, const MacAddress& pDestAddr)
-{
+void TarpF::setDownControlInfo(Packet *const pMsg,
+        const MacAddress &pDestAddr) {
     pMsg->addTagIfAbsent<MacAddressReq>()->setDestAddress(pDestAddr);
     pMsg->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&getProtocol());
     pMsg->addTagIfAbsent<DispatchProtocolInd>()->setProtocol(&getProtocol());
