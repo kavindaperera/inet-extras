@@ -123,16 +123,32 @@ void TarpF::handleLowerPacket(Packet *packet) {
 
     if (notBroadcasted(tarpfHeader.get())) {
 
-        EV << " data msg not BROADCASTed! \n";
+        // TODO - if msg is for me -> sendUp
+        if (interfaceTable->isLocalAddress(tarpfHeader->getDestinationAddress())) {
+
+        }
+
+        // TODO - else if broadcast message
+        else if (tarpfHeader->getDestinationAddress().isBroadcast()) {
+
+        }
+
+        // TODO - else not for me -> rebroadcast
+        else {
+            // TODO - check ttl and rebroadcast
+            if (tarpfHeader->getTtl() > 1) {
+                EV << " data msg not for me! ttl = " << tarpfHeader->getTtl()
+                        << " > 1 -> forward" << endl;
+
+                // TODO - call decapsulate
+
+            }
+        }
 
     } else {
-
         EV << " data msg already BROADCASTed! delete msg\n";
-
         delete packet;
     }
-
-    // TODO - Generated method body
 
 }
 
