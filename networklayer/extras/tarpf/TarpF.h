@@ -35,9 +35,8 @@ namespace inet {
  * @author Kavinda Perera
  *
  */
-class INET_API TarpF : public NetworkProtocolBase, public INetworkProtocol
-{
-    protected:
+class INET_API TarpF: public NetworkProtocolBase, public INetworkProtocol {
+protected:
 
     /** @brief Network layer sequence number*/
     unsigned long seqNum = 0;
@@ -54,12 +53,16 @@ class INET_API TarpF : public NetworkProtocolBase, public INetworkProtocol
     /** @brief Defines whether to use plain flooding or not*/
     bool plainFlooding = false;
 
-    class Bcast
-    {
-        public:
-            unsigned long seqNum;
-            L3Address srcAddr;
-            simtime_t delTime;
+    class Bcast {
+    public:
+        unsigned long seqNum;
+        L3Address srcAddr;
+        simtime_t delTime;
+    public:
+        Bcast(unsigned long n = 0, const L3Address &s = L3Address(),
+                simtime_t_cref d = SIMTIME_ZERO) :
+                seqNum(n), srcAddr(s), delTime(d) {
+        }
 
     };
 
@@ -71,47 +74,54 @@ class INET_API TarpF : public NetworkProtocolBase, public INetworkProtocol
     /** @brief Max number of entries in the duplicate discard cache*/
     unsigned int ddMaxEntries = 0;
 
-    /** @brief MTime after which a duplicate discard cache entry can be deleted*/
+    /** @brief Time after which a duplicate discard cache entry can be deleted*/
     simtime_t ddDelTime;
-
 
     long nbDataPacketsReceived = 0;
     long nbDataPacketsSent = 0;
     long nbDataPacketsForwarded = 0;
     long nbHops = 0;
 
+public:
+    TarpF() {
+    }
 
-    public:
-        TarpF() {}
+    /** @brief Initialization of omnetpp.ini parameters*/
+    virtual int numInitStages() const override {
+        return NUM_INIT_STAGES;
+    }
 
-        /** @brief Initialization of omnetpp.ini parameters*/
-        virtual int numInitStages() const override { return NUM_INIT_STAGES; }
+    virtual void initialize(int) override;
 
-        virtual void initialize(int) override;
+    virtual void finish() override;
 
-        virtual void finish() override;
+    const Protocol& getProtocol() const override {
+        return Protocol::tarpf;
+    }
 
-        const Protocol& getProtocol() const override { return Protocol::tarpf; }
+protected:
 
-    protected:
+    /** @brief Handle messages from upper layer */
+    virtual void handleUpperPacket(Packet *packet) override;
 
-        /** @brief Handle messages from upper layer */
-        virtual void handleUpperPacket(Packet *packet) override;
+    /** @brief Handle messages from lower layer */
+    virtual void handleLowerPacket(Packet *packet) override;
 
-        /** @brief Handle messages from lower layer */
-        virtual void handleLowerPacket(Packet *packet) override;
+    /** @brief Checks whether a message was already broadcasted*/
+    bool notBroadcasted(const TarpFHeader*);
 
-        /** @brief Checks whether a message was already broadcasted*/
-        bool notBroadcasted(const TarpFHeader *);
+    void decapsulate(Packet *packet);
+    void encapsulate(Packet *packet);
 
-        void decapsulate(Packet *packet);
-        void encapsulate(Packet *packet);
+    virtual void setDownControlInfo(Packet *const pMsg, const MacAddress& pDestAddr);
 
-
-        // OperationalBase:
-        virtual void handleStartOperation(LifecycleOperation *operation) override {}    //TODO implementation
-        virtual void handleStopOperation(LifecycleOperation *operation) override {}    //TODO implementation
-        virtual void handleCrashOperation(LifecycleOperation *operation) override {}    //TODO implementation
+    // OperationalBase:
+    virtual void handleStartOperation(LifecycleOperation *operation) override {
+    }    //TODO implementation
+    virtual void handleStopOperation(LifecycleOperation *operation) override {
+    }    //TODO implementation
+    virtual void handleCrashOperation(LifecycleOperation *operation) override {
+    }    //TODO implementation
 
 };
 

@@ -165,4 +165,14 @@ void TarpF::encapsulate(Packet *appPkt)
 
 }
 
+/**
+ * Attaches a "control info" structure (object) to the down message pMsg.
+ */
+void TarpF::setDownControlInfo(Packet *const pMsg, const MacAddress& pDestAddr)
+{
+    pMsg->addTagIfAbsent<MacAddressReq>()->setDestAddress(pDestAddr);
+    pMsg->addTagIfAbsent<PacketProtocolTag>()->setProtocol(&getProtocol());
+    pMsg->addTagIfAbsent<DispatchProtocolInd>()->setProtocol(&getProtocol());
+}
+
 } //namespace inet
