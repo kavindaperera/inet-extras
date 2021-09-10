@@ -126,6 +126,11 @@ void TarpF::handleLowerPacket(Packet *packet) {
         // TODO - if msg is for me -> sendUp
         if (interfaceTable->isLocalAddress(tarpfHeader->getDestinationAddress())) {
 
+            EV << " data msg for me! send to Upper" << endl;
+            nbHops = nbHops + (defaultTtl + 1 - tarpfHeader->getTtl());
+            decapsulate(packet);
+            sendUp(packet);
+            nbDataPacketsReceived++;
         }
 
         // TODO - else if broadcast message
@@ -141,6 +146,23 @@ void TarpF::handleLowerPacket(Packet *packet) {
                         << " > 1 -> forward" << endl;
                 decapsulate(packet);
 
+                auto packetCopy = new Packet();
+                packetCopy->insertAtBack(packet->peekDataAt(b(0), packet->getDataLength()));
+
+                auto tarpfHeaderCopy = staticPtrCast<TarpFHeader>(tarpfHeader->dupShared());
+                tarpfHeaderCopy->setTtl(tarpfHeader->getTtl() - 1);
+
+                packetCopy->insertAtFront(tarpfHeaderCopy);
+
+                // needs to set the next hop address again to broadcast
+                cObject *const pCtrlInfo = packetCopy->removeControlInfo();
+                if (pCtrlInfo != nullptr)
+                    delete pCtrlInfo;
+
+                setDownControlInfo(packetCopy, MacAddress::BROADCAST_ADDRESS);
+                sendDown(packetCopy);
+                nbDataPacketsForwarded++;
+                delete packet;
 
             }
         }
