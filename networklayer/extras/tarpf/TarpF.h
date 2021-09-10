@@ -66,6 +66,18 @@ protected:
 
     };
 
+    class Kcast {
+    public:
+        L3Address   N;      // destinations
+        int         hNK;
+        int         cNK;
+    public:
+        Kcast(const L3Address &s = L3Address(), int hnk = 0, int cnk = 0) :
+            N(s), hNK(hnk), cNK(cnk) {
+
+        }
+    };
+
     typedef std::list<Bcast> cTarpCache;
 
     /** @brief List of already broadcasted messages*/
@@ -76,6 +88,17 @@ protected:
 
     /** @brief Time after which a duplicate discard cache entry can be deleted*/
     simtime_t ddDelTime;
+
+    typedef std::list<Kcast> cTarpSpdCache;
+
+    /** @brief List of triplets <N, hNK,CNK>*/
+    cTarpSpdCache spdCache;
+
+    /** @brief Max number of entries in the Sub-optimal Path Discard cache*/
+    unsigned int spdMaxEntries;
+
+    /** @brief Time after which a Sub-optimal Path Discard entry can be deleted*/
+    simtime_t spdDelTime;
 
     long nbDataPacketsReceived = 0;
     long nbDataPacketsSent = 0;
