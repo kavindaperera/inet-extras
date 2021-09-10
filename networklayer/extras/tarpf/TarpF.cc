@@ -108,13 +108,53 @@ void TarpF::handleUpperPacket(Packet *packet) {
 }
 
 void TarpF::handleLowerPacket(Packet *packet) {
+
+    auto tarpfHeader = packet->peekAtFront<TarpFHeader>();
+
+    if(notBroadcasted(tarpfHeader.get())) {
+
+        EV << " data msg not BROADCASTed! \n";
+
+    }
+    else {
+
+        EV << " data msg already BROADCASTed! delete msg\n";
+
+        delete packet;
+    }
+
+
     // TODO - Generated method body
-    throw cRuntimeError("Debug!.....handleLowerPacket");
+
 }
 
 bool TarpF::notBroadcasted(const TarpFHeader *msg) {
-    // TODO - Generated method body
-    throw cRuntimeError("Debug!.....notBroadcasted");
+
+    if (!plainFlooding)
+        return true;
+
+    // search ddCacahe for out-dated entries and delete them
+    for (auto it = ddCache.begin(); it != ddCache.end(); ) {
+        if (it->delTime < simTime()) {
+            it = ddCache.erase(it);
+        }
+        // message was already broadcasted
+        else if ((it->srcAddr == msg->getSourceAddress()) && (it->seqNum == msg->getSeqNum())) {
+            // update
+            it->delTime = simTime() + ddDelTime;
+            return false;
+        }
+        else
+            ++it;
+    }
+
+    // delete oldest entry if max size is reached
+    if (ddCache.size() >= ddMaxEntries) {
+        EV << "ddCache is full, delete oldest entry\n";
+        ddCache.pop_front();
+    }
+
+    ddCache.push_back(Bcast(msg->getSeqNum(), msg->getSourceAddress(), simTime() + ddDelTime));
     return true;
 }
 
