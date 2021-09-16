@@ -45,6 +45,12 @@ simple TarpF extends NetworkProtocolBase like INetworkProtocol
         // time-to-live (ttl) used for this module expressed in  number of hops.
         int defaultTtl = default(10); 
         
+        bool spdRule = default(true); 
+        
+        int spdMaxEntries = default(100); 
+        
+        int spdDelTime @unit(s) = default(100 s); 
+        
         @class(TarpF);
         
 }

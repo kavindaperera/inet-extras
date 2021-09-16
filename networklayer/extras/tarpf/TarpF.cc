@@ -44,6 +44,7 @@ void TarpF::initialize(int stage) {
         headerLength = par("headerLength");
         defaultTtl = par("defaultTtl");
         plainFlooding = par("plainFlooding");
+        spdRule = par("spdRule");
 
         EV << "defaultTtl = " << defaultTtl << " plainFlooding = "
                   << plainFlooding << endl;
@@ -54,6 +55,16 @@ void TarpF::initialize(int stage) {
             ddDelTime = par("ddDelTime");
             EV << "ddMaxEntries = " << ddMaxEntries << " ddDelTime = "
                       << ddDelTime << endl;
+
+        }
+
+        if (spdRule) {
+            // settings spd cache parameters
+            spdMaxEntries = par("spdMaxEntries");
+            spdDelTime = par("spdDelTime");
+            EV << "spdMaxEntries = " << spdMaxEntries << " spdDelTime = "
+                      << spdDelTime << endl;
+
         }
 
     } else if (stage == INITSTAGE_NETWORK_LAYER) {
@@ -169,6 +180,13 @@ void TarpF::handleLowerPacket(Packet *packet) {
                           << " > 1 -> forward" << endl;
                 decapsulate(packet);
 
+                if (isSubOptimal(tarpfHeader.get())) {
+
+                    EV << "suboptimal path" << endl;
+                    delete packet;
+                    return;
+                }
+
                 auto packetCopy = new Packet();
                 packetCopy->insertAtBack(
                         packet->peekDataAt(b(0), packet->getDataLength()));
@@ -233,6 +251,26 @@ bool TarpF::notBroadcasted(const TarpFHeader *msg) {
             Bcast(msg->getSeqNum(), msg->getSourceAddress(),
                     simTime() + ddDelTime));
     return true;
+}
+
+bool TarpF::isSubOptimal(const TarpFHeader *msg) {
+
+    EV << "DEBUG: hopCount = " << (defaultTtl + 1 - msg->getTtl()) << endl;
+
+    // search spdCache
+    EV << "DEBUG: entry = " << spdCache[msg->getSourceAddress()].hopCount
+              << endl;
+
+    if (spdCache[msg->getSourceAddress()].hopCount > (defaultTtl + 1 - msg->getTtl())) {
+
+        throw cRuntimeError("hopCount: illegal!!");
+
+    }
+
+    spdCache[msg->getSourceAddress()] = SpdEntry((defaultTtl + 1 - msg->getTtl()),0);
+
+    return false;
+
 }
 
 /**
@@ -317,13 +355,14 @@ void TarpF::encapsulate(Packet *appPkt) {
 
     pkt->setPayloadLengthField(appPkt->getDataLength());
 
-    //encapsulate the application packet
+//encapsulate the application packet
     setDownControlInfo(appPkt, MacAddress::BROADCAST_ADDRESS);
 
-    // TODO - Generated method body
+// TODO - Generated method body
 
     appPkt->insertAtFront(pkt);
-    EV << " pkt encapsulated\n";
+    EV << " pkt encapsulated..." << appPkt << endl;
+    ;
 
 }
 

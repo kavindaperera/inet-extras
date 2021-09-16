@@ -17,6 +17,7 @@
 #define __INET_TARPF_H_
 
 #include <list>
+#include <map>
 
 #include "inet/common/packet/Packet.h"
 #include "inet/networklayer/base/NetworkProtocolBase.h"
@@ -53,6 +54,9 @@ protected:
     /** @brief Defines whether to use plain flooding or not*/
     bool plainFlooding = false;
 
+    bool spdRule = false;
+
+
     class Bcast {
     public:
         unsigned long seqNum;
@@ -66,14 +70,13 @@ protected:
 
     };
 
-    class Kcast {
+    class SpdEntry {
     public:
-        L3Address   N;      // destinations
-        int         hNK;
+        int         hopCount;
         int         cNK;
     public:
-        Kcast(const L3Address &s = L3Address(), int hnk = 0, int cnk = 0) :
-            N(s), hNK(hnk), cNK(cnk) {
+        SpdEntry(int hopCount = 0, int cnk = 0) :
+            hopCount(hopCount), cNK(cnk) {
 
         }
     };
@@ -89,16 +92,18 @@ protected:
     /** @brief Time after which a duplicate discard cache entry can be deleted*/
     simtime_t ddDelTime;
 
-    typedef std::list<Kcast> cTarpSpdCache;
 
-    /** @brief List of triplets <N, hNK,CNK>*/
+    typedef std::map<L3Address, SpdEntry> cTarpSpdCache;
+
+    /** @brief Map of <hNK,CNK> indexed by N*/
     cTarpSpdCache spdCache;
 
     /** @brief Max number of entries in the Sub-optimal Path Discard cache*/
-    unsigned int spdMaxEntries;
+    unsigned int spdMaxEntries = 0;
 
     /** @brief Time after which a Sub-optimal Path Discard entry can be deleted*/
     simtime_t spdDelTime;
+
 
     long nbDataPacketsReceived = 0;
     long nbDataPacketsSent = 0;
@@ -132,6 +137,8 @@ protected:
 
     /** @brief Checks whether a message was already broadcasted*/
     bool notBroadcasted(const TarpFHeader*);
+
+    bool isSubOptimal(const TarpFHeader*);
 
     void decapsulate(Packet *packet);
     void encapsulate(Packet *packet);
