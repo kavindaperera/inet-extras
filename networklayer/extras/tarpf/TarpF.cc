@@ -39,14 +39,15 @@ void TarpF::initialize(int stage) {
         nbDataPacketsSent = 0;
         nbDataPacketsForwarded = 0;
         nbHops = 0;
+        nbSPD = 0;
 
         //parameters
         headerLength = par("headerLength");
-        defaultTtl = par("defaultTtl");
+        maxHopCount = par("maxHopCount");
         plainFlooding = par("plainFlooding");
         spdRule = par("spdRule");
 
-        EV << "defaultTtl = " << defaultTtl << " plainFlooding = "
+        EV << "maxHopCount = " << maxHopCount << " plainFlooding = "
                   << plainFlooding << endl;
 
         if (plainFlooding) {
@@ -81,6 +82,11 @@ void TarpF::finish() {
     if (plainFlooding) {
         ddCache.clear();
     }
+
+    if (spdRule) {
+        spdCache.clear();
+    }
+
     recordScalar("nbDataPacketsReceived", nbDataPacketsReceived);
     recordScalar("nbDataPacketsSent", nbDataPacketsSent);
     recordScalar("nbDataPacketsForwarded", nbDataPacketsForwarded);
@@ -90,6 +96,7 @@ void TarpF::finish() {
     } else {
         recordScalar("meanNbHops", 0);
     }
+    recordScalar("nbSPD", nbSPD);
 }
 
 void TarpF::handleUpperPacket(Packet *packet) {
@@ -139,50 +146,52 @@ void TarpF::handleLowerPacket(Packet *packet) {
                 tarpfHeader->getDestinationAddress())) {
 
             EV << " data msg for me! send to Upper" << endl;
-            nbHops = nbHops + (defaultTtl + 1 - tarpfHeader->getTtl());
+            nbHops = nbHops + (1 + tarpfHeader->getHopCount());
             decapsulate(packet);
             sendUp(packet);
             nbDataPacketsReceived++;
         }
 
         // else if broadcast message
-        else if (tarpfHeader->getDestinationAddress().isBroadcast()) {
+//        else if (tarpfHeader->getDestinationAddress().isBroadcast()) {
+//
+//            // check ttl and rebroadcast
+//            if (tarpfHeader->getTtl() > 1) {
+//                EV << " data msg BROADCAST! ttl = " << tarpfHeader->getTtl()
+//                          << " > 1 -> rebroadcast msg & send to upper\n";
+//
+//                auto dMsg = packet->dup();
+//                auto newTarpFHeader = dMsg->removeAtFront<TarpFHeader>();
+//                newTarpFHeader->setTtl(newTarpFHeader->getTtl() - 1);
+//                dMsg->insertAtFront(newTarpFHeader);
+//                setDownControlInfo(dMsg, MacAddress::BROADCAST_ADDRESS);
+//                sendDown(dMsg);
+//                nbDataPacketsForwarded++;
+//            } else
+//                EV << " max hops reached (ttl = " << tarpfHeader->getTtl()
+//                          << ") -> only send to upper\n";
+//
+//            // message has to be forwarded to upper layer
+//            nbHops = nbHops + (defaultTtl + 1 - tarpfHeader->getTtl());
+//            decapsulate(packet);
+//            sendUp(packet);
+//            nbDataPacketsReceived++;
+//
+//        }
 
-            // check ttl and rebroadcast
-            if (tarpfHeader->getTtl() > 1) {
-                EV << " data msg BROADCAST! ttl = " << tarpfHeader->getTtl()
-                          << " > 1 -> rebroadcast msg & send to upper\n";
-
-                auto dMsg = packet->dup();
-                auto newTarpFHeader = dMsg->removeAtFront<TarpFHeader>();
-                newTarpFHeader->setTtl(newTarpFHeader->getTtl() - 1);
-                dMsg->insertAtFront(newTarpFHeader);
-                setDownControlInfo(dMsg, MacAddress::BROADCAST_ADDRESS);
-                sendDown(dMsg);
-                nbDataPacketsForwarded++;
-            } else
-                EV << " max hops reached (ttl = " << tarpfHeader->getTtl()
-                          << ") -> only send to upper\n";
-
-            // message has to be forwarded to upper layer
-            nbHops = nbHops + (defaultTtl + 1 - tarpfHeader->getTtl());
-            decapsulate(packet);
-            sendUp(packet);
-            nbDataPacketsReceived++;
-
-        }
-
-        // else not for me -> rebroadcast
+// else not for me -> rebroadcast
         else {
-            // check ttl and rebroadcast
-            if (tarpfHeader->getTtl() > 1) {
-                EV << " data msg not for me! ttl = " << tarpfHeader->getTtl()
-                          << " > 1 -> forward" << endl;
+            // LHC Rule : check ttl and rebroadcast
+            if (tarpfHeader->getHopCount() < maxHopCount) {
+
+                EV << " data msg not for me! hopCount = " << tarpfHeader->getHopCount()
+                          << " < " << maxHopCount << " forward" << endl;
+
                 decapsulate(packet);
 
+                // SPD rule
                 if (isSubOptimal(tarpfHeader.get())) {
-
-                    EV << "suboptimal path" << endl;
+                    nbSPD++;
                     delete packet;
                     return;
                 }
@@ -193,7 +202,8 @@ void TarpF::handleLowerPacket(Packet *packet) {
 
                 auto tarpfHeaderCopy = staticPtrCast<TarpFHeader>(
                         tarpfHeader->dupShared());
-                tarpfHeaderCopy->setTtl(tarpfHeader->getTtl() - 1);
+
+                tarpfHeaderCopy->setHopCount(tarpfHeader->getHopCount() + 1);
 
                 packetCopy->insertAtFront(tarpfHeaderCopy);
 
@@ -204,11 +214,13 @@ void TarpF::handleLowerPacket(Packet *packet) {
 
                 setDownControlInfo(packetCopy, MacAddress::BROADCAST_ADDRESS);
                 sendDown(packetCopy);
+
                 nbDataPacketsForwarded++;
                 delete packet;
+
             } else {
                 // max hops reached -> delete
-                EV << " max hops reached (ttl = " << tarpfHeader->getTtl()
+                EV << " max hops reached (hopCount = " << tarpfHeader->getHopCount()
                           << ") -> delete msg\n";
                 delete packet;
             }
@@ -251,23 +263,46 @@ bool TarpF::notBroadcasted(const TarpFHeader *msg) {
             Bcast(msg->getSeqNum(), msg->getSourceAddress(),
                     simTime() + ddDelTime));
     return true;
+
 }
+
 
 bool TarpF::isSubOptimal(const TarpFHeader *msg) {
 
-    EV << "DEBUG: hopCount = " << (defaultTtl + 1 - msg->getTtl()) << endl;
+    if (!spdRule)
+        return false;
 
     // search spdCache
-    EV << "DEBUG: entry = " << spdCache[msg->getSourceAddress()].hopCount
-              << endl;
+    std::map<L3Address, SpdEntry>::iterator it;
 
-    if (spdCache[msg->getSourceAddress()].hopCount > (defaultTtl + 1 - msg->getTtl())) {
+    for (it = spdCache.begin(); it != spdCache.end(); it++) {
 
-        throw cRuntimeError("hopCount: illegal!!");
+        if (it->second.delTime < simTime()) {
+
+            EV << "Reset spdCache: " << it->first << " current: " << it->second.hopCount << endl;
+
+            it->second.hopCount = 0;
+            it->second.delTime = simTime() + spdDelTime;
+        }
 
     }
 
-    spdCache[msg->getSourceAddress()] = SpdEntry((defaultTtl + 1 - msg->getTtl()),0);
+    if (spdCache[msg->getSourceAddress()].hopCount == 0) {
+
+        spdCache[msg->getSourceAddress()] = SpdEntry( ( 1 + msg->getHopCount()), simTime() + spdDelTime);
+
+    }
+
+    if ( msg->getHopBack() < (spdCache[msg->getDestinationAddress()].hopCount  + 1 + msg->getHopCount())) {
+
+        EV << "Sub Optimal Path: Hmax= "
+                  << msg->getHopBack()
+                  << " < Hc= " << (1 + msg->getHopCount()) << " + " << "Hnk=" << spdCache[msg->getDestinationAddress()].hopCount
+                  << endl;
+
+        return true;
+
+    }
 
     return false;
 
@@ -300,7 +335,7 @@ void TarpF::decapsulate(Packet *packet) {
 
     addressInd->setSrcAddress(tarpfHeader->getSourceAddress());
     addressInd->setDestAddress(tarpfHeader->getDestinationAddress());
-    packet->addTagIfAbsent<HopLimitInd>()->setHopLimit(tarpfHeader->getTtl());
+    packet->addTagIfAbsent<HopLimitInd>()->setHopLimit(maxHopCount - tarpfHeader->getHopCount());
 
     EV << " pkt decapsulated\n";
 
@@ -313,26 +348,27 @@ void TarpF::decapsulate(Packet *packet) {
 void TarpF::encapsulate(Packet *appPkt) {
     L3Address netwAddr;
 
-    EV << " encapsulating.." << appPkt << endl;
+    EV << " encapsulating pkt: " << appPkt << endl;
 
     auto cInfo = appPkt->removeControlInfo();
     auto pkt = makeShared<TarpFHeader>();
     pkt->setChunkLength(b(headerLength));
 
     auto hopLimitReq = appPkt->removeTagIfPresent<HopLimitReq>();
-    int ttl = (hopLimitReq != nullptr) ? hopLimitReq->getHopLimit() : -1;
+    int Hb = (hopLimitReq != nullptr) ? hopLimitReq->getHopLimit() : -1;
     delete hopLimitReq;
-    if (ttl == -1)
-        ttl = defaultTtl;
+
+    if (Hb == -1)
+        Hb = maxHopCount;
 
     pkt->setSeqNum(seqNum);
     seqNum++;
-    pkt->setTtl(ttl);
+
+    pkt->setHopBack(Hb);
 
     auto addressReq = appPkt->findTag<L3AddressReq>();
     if (addressReq == nullptr) {
-        EV
-                  << "warning: Application layer did not specify a destination L3 address\n"
+        EV << "warning: Application layer did not specify a destination L3 address\n"
                   << "\t using broadcast address instead\n";
     } else {
         pkt->setProtocol(appPkt->getTag<PacketProtocolTag>()->getProtocol());
@@ -344,10 +380,6 @@ void TarpF::encapsulate(Packet *appPkt) {
     pkt->setSrcAddr(myNetwAddr);
     pkt->setDestAddr(netwAddr);
 
-    EV << " pkt: seqNum=" << pkt->getSeqNum() << " ttl=" << pkt->getTtl()
-              << " srcAddr=" << pkt->getSrcAddr() << " destAddr="
-              << pkt->getDestAddr() << endl;
-
     EV << " netw " << myNetwAddr << " sending packet" << endl;
 
     EV << "sendDown: nHop=L3BROADCAST -> message has to be broadcasted"
@@ -358,11 +390,13 @@ void TarpF::encapsulate(Packet *appPkt) {
 //encapsulate the application packet
     setDownControlInfo(appPkt, MacAddress::BROADCAST_ADDRESS);
 
-// TODO - Generated method body
-
     appPkt->insertAtFront(pkt);
-    EV << " pkt encapsulated..." << appPkt << endl;
-    ;
+    EV << "encapsulated pkt: " << appPkt << endl;
+
+    EV << " pkt header: seqNum=" << pkt->getSeqNum()
+              << " hopCount=" << pkt->getHopCount() << " hopBack=" << pkt->getHopBack()
+              << " srcAddr=" << pkt->getSrcAddr() << " destAddr=" << pkt->getDestAddr()
+              << endl;
 
 }
 

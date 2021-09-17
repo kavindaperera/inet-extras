@@ -42,8 +42,8 @@ simple TarpF extends NetworkProtocolBase like INetworkProtocol
         // Time after which a duplicate discard cache entry can be deleted.
         int ddDelTime @unit(s) = default(100 s); 
         
-        // time-to-live (ttl) used for this module expressed in  number of hops.
-        int defaultTtl = default(10); 
+        // time-to-live () used for this module expressed in  number of hops.
+        int maxHopCount = default(10); 
         
         bool spdRule = default(true); 
         

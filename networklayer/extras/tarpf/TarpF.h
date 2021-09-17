@@ -48,8 +48,8 @@ protected:
     /** @brief Length of the header*/
     int headerLength = 0;
 
-    /** @brief Default time-to-live (ttl) used for this module*/
-    int defaultTtl = 0;
+    /** @brief Default time-to-live () used for this module*/
+    int maxHopCount = 0;
 
     /** @brief Defines whether to use plain flooding or not*/
     bool plainFlooding = false;
@@ -73,10 +73,10 @@ protected:
     class SpdEntry {
     public:
         int         hopCount;
-        int         cNK;
+        simtime_t   delTime;
     public:
-        SpdEntry(int hopCount = 0, int cnk = 0) :
-            hopCount(hopCount), cNK(cnk) {
+        SpdEntry(int hopCount = 0, simtime_t_cref d = SIMTIME_ZERO) :
+            hopCount(hopCount), delTime(d) {
 
         }
     };
@@ -95,7 +95,7 @@ protected:
 
     typedef std::map<L3Address, SpdEntry> cTarpSpdCache;
 
-    /** @brief Map of <hNK,CNK> indexed by N*/
+    /** @brief Map of <L3Address,SpdEntry> indexed by Node*/
     cTarpSpdCache spdCache;
 
     /** @brief Max number of entries in the Sub-optimal Path Discard cache*/
@@ -108,6 +108,7 @@ protected:
     long nbDataPacketsReceived = 0;
     long nbDataPacketsSent = 0;
     long nbDataPacketsForwarded = 0;
+    long nbSPD = 0;
     long nbHops = 0;
 
 public:
