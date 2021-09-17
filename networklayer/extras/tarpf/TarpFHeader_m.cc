@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by nedtool 5.6 from inet/networklayer/extras/tarpf/../tarpf/TarpFHeader.msg.
+// Generated file, do not edit! Created by nedtool 5.6 from inet/networklayer/extras/tarpf/TarpFHeader.msg.
 //
 
 // Disable warnings about unused variables, empty switch stmts, etc:
@@ -234,7 +234,8 @@ void TarpFHeader::copy(const TarpFHeader& other)
 {
     this->srcAddr = other.srcAddr;
     this->destAddr = other.destAddr;
-    this->ttl = other.ttl;
+    this->hopCount = other.hopCount;
+    this->hopBack = other.hopBack;
     this->seqNum = other.seqNum;
     this->protocolId = other.protocolId;
     this->payloadLengthField = other.payloadLengthField;
@@ -245,7 +246,8 @@ void TarpFHeader::parsimPack(omnetpp::cCommBuffer *b) const
     ::inet::NetworkHeaderBase::parsimPack(b);
     doParsimPacking(b,this->srcAddr);
     doParsimPacking(b,this->destAddr);
-    doParsimPacking(b,this->ttl);
+    doParsimPacking(b,this->hopCount);
+    doParsimPacking(b,this->hopBack);
     doParsimPacking(b,this->seqNum);
     doParsimPacking(b,this->protocolId);
     doParsimPacking(b,this->payloadLengthField);
@@ -256,7 +258,8 @@ void TarpFHeader::parsimUnpack(omnetpp::cCommBuffer *b)
     ::inet::NetworkHeaderBase::parsimUnpack(b);
     doParsimUnpacking(b,this->srcAddr);
     doParsimUnpacking(b,this->destAddr);
-    doParsimUnpacking(b,this->ttl);
+    doParsimUnpacking(b,this->hopCount);
+    doParsimUnpacking(b,this->hopBack);
     doParsimUnpacking(b,this->seqNum);
     doParsimUnpacking(b,this->protocolId);
     doParsimUnpacking(b,this->payloadLengthField);
@@ -284,15 +287,26 @@ void TarpFHeader::setDestAddr(const L3Address& destAddr)
     this->destAddr = destAddr;
 }
 
-int TarpFHeader::getTtl() const
+int TarpFHeader::getHopCount() const
 {
-    return this->ttl;
+    return this->hopCount;
 }
 
-void TarpFHeader::setTtl(int ttl)
+void TarpFHeader::setHopCount(int hopCount)
 {
     handleChange();
-    this->ttl = ttl;
+    this->hopCount = hopCount;
+}
+
+int TarpFHeader::getHopBack() const
+{
+    return this->hopBack;
+}
+
+void TarpFHeader::setHopBack(int hopBack)
+{
+    handleChange();
+    this->hopBack = hopBack;
 }
 
 unsigned long TarpFHeader::getSeqNum() const
@@ -335,7 +349,8 @@ class TarpFHeaderDescriptor : public omnetpp::cClassDescriptor
     enum FieldConstants {
         FIELD_srcAddr,
         FIELD_destAddr,
-        FIELD_ttl,
+        FIELD_hopCount,
+        FIELD_hopBack,
         FIELD_seqNum,
         FIELD_protocolId,
         FIELD_payloadLengthField,
@@ -401,7 +416,7 @@ const char *TarpFHeaderDescriptor::getProperty(const char *propertyname) const
 int TarpFHeaderDescriptor::getFieldCount() const
 {
     omnetpp::cClassDescriptor *basedesc = getBaseClassDescriptor();
-    return basedesc ? 6+basedesc->getFieldCount() : 6;
+    return basedesc ? 7+basedesc->getFieldCount() : 7;
 }
 
 unsigned int TarpFHeaderDescriptor::getFieldTypeFlags(int field) const
@@ -415,12 +430,13 @@ unsigned int TarpFHeaderDescriptor::getFieldTypeFlags(int field) const
     static unsigned int fieldTypeFlags[] = {
         0,    // FIELD_srcAddr
         0,    // FIELD_destAddr
-        FD_ISEDITABLE,    // FIELD_ttl
+        FD_ISEDITABLE,    // FIELD_hopCount
+        FD_ISEDITABLE,    // FIELD_hopBack
         FD_ISEDITABLE,    // FIELD_seqNum
         0,    // FIELD_protocolId
         FD_ISEDITABLE,    // FIELD_payloadLengthField
     };
-    return (field >= 0 && field < 6) ? fieldTypeFlags[field] : 0;
+    return (field >= 0 && field < 7) ? fieldTypeFlags[field] : 0;
 }
 
 const char *TarpFHeaderDescriptor::getFieldName(int field) const
@@ -434,12 +450,13 @@ const char *TarpFHeaderDescriptor::getFieldName(int field) const
     static const char *fieldNames[] = {
         "srcAddr",
         "destAddr",
-        "ttl",
+        "hopCount",
+        "hopBack",
         "seqNum",
         "protocolId",
         "payloadLengthField",
     };
-    return (field >= 0 && field < 6) ? fieldNames[field] : nullptr;
+    return (field >= 0 && field < 7) ? fieldNames[field] : nullptr;
 }
 
 int TarpFHeaderDescriptor::findField(const char *fieldName) const
@@ -448,10 +465,11 @@ int TarpFHeaderDescriptor::findField(const char *fieldName) const
     int base = basedesc ? basedesc->getFieldCount() : 0;
     if (fieldName[0] == 's' && strcmp(fieldName, "srcAddr") == 0) return base+0;
     if (fieldName[0] == 'd' && strcmp(fieldName, "destAddr") == 0) return base+1;
-    if (fieldName[0] == 't' && strcmp(fieldName, "ttl") == 0) return base+2;
-    if (fieldName[0] == 's' && strcmp(fieldName, "seqNum") == 0) return base+3;
-    if (fieldName[0] == 'p' && strcmp(fieldName, "protocolId") == 0) return base+4;
-    if (fieldName[0] == 'p' && strcmp(fieldName, "payloadLengthField") == 0) return base+5;
+    if (fieldName[0] == 'h' && strcmp(fieldName, "hopCount") == 0) return base+2;
+    if (fieldName[0] == 'h' && strcmp(fieldName, "hopBack") == 0) return base+3;
+    if (fieldName[0] == 's' && strcmp(fieldName, "seqNum") == 0) return base+4;
+    if (fieldName[0] == 'p' && strcmp(fieldName, "protocolId") == 0) return base+5;
+    if (fieldName[0] == 'p' && strcmp(fieldName, "payloadLengthField") == 0) return base+6;
     return basedesc ? basedesc->findField(fieldName) : -1;
 }
 
@@ -466,12 +484,13 @@ const char *TarpFHeaderDescriptor::getFieldTypeString(int field) const
     static const char *fieldTypeStrings[] = {
         "inet::L3Address",    // FIELD_srcAddr
         "inet::L3Address",    // FIELD_destAddr
-        "int",    // FIELD_ttl
+        "int",    // FIELD_hopCount
+        "int",    // FIELD_hopBack
         "unsigned long",    // FIELD_seqNum
         "inet::IpProtocolId",    // FIELD_protocolId
         "inet::B",    // FIELD_payloadLengthField
     };
-    return (field >= 0 && field < 6) ? fieldTypeStrings[field] : nullptr;
+    return (field >= 0 && field < 7) ? fieldTypeStrings[field] : nullptr;
 }
 
 const char **TarpFHeaderDescriptor::getFieldPropertyNames(int field) const
@@ -547,7 +566,8 @@ std::string TarpFHeaderDescriptor::getFieldValueAsString(void *object, int field
     switch (field) {
         case FIELD_srcAddr: return pp->getSrcAddr().str();
         case FIELD_destAddr: return pp->getDestAddr().str();
-        case FIELD_ttl: return long2string(pp->getTtl());
+        case FIELD_hopCount: return long2string(pp->getHopCount());
+        case FIELD_hopBack: return long2string(pp->getHopBack());
         case FIELD_seqNum: return ulong2string(pp->getSeqNum());
         case FIELD_protocolId: return enum2string(pp->getProtocolId(), "inet::IpProtocolId");
         case FIELD_payloadLengthField: return unit2string(pp->getPayloadLengthField());
@@ -565,7 +585,8 @@ bool TarpFHeaderDescriptor::setFieldValueAsString(void *object, int field, int i
     }
     TarpFHeader *pp = (TarpFHeader *)object; (void)pp;
     switch (field) {
-        case FIELD_ttl: pp->setTtl(string2long(value)); return true;
+        case FIELD_hopCount: pp->setHopCount(string2long(value)); return true;
+        case FIELD_hopBack: pp->setHopBack(string2long(value)); return true;
         case FIELD_seqNum: pp->setSeqNum(string2ulong(value)); return true;
         case FIELD_payloadLengthField: pp->setPayloadLengthField(B(string2long(value))); return true;
         default: return false;

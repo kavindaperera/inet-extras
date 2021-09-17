@@ -29,7 +29,8 @@ class TarpFHeader extends NetworkHeaderBase
 {
 	L3Address		srcAddr;
 	L3Address		destAddr;
-	int 			ttl = 1; 	// the maximum length of the path that the packet is allowed to travel expressed as the number of hops (r)
+	int				hopCount = 0;
+	int				hopBack = 1;
 	unsigned long	seqNum = 0;	// the sequence number of the packet within its session (n)
     IpProtocolId  protocolId;
     B             payloadLengthField;

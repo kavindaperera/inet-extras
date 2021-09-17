@@ -1,5 +1,5 @@
 //
-// Generated file, do not edit! Created by nedtool 5.6 from inet/networklayer/extras/tarpf/../tarpf/TarpFHeader.msg.
+// Generated file, do not edit! Created by nedtool 5.6 from inet/networklayer/extras/tarpf/TarpFHeader.msg.
 //
 
 #ifndef __INET_TARPFHEADER_M_H
@@ -51,13 +51,14 @@ class TarpFHeader;
 namespace inet {
 
 /**
- * Class generated from <tt>inet/networklayer/extras/tarpf/../tarpf/TarpFHeader.msg:29</tt> by nedtool.
+ * Class generated from <tt>inet/networklayer/extras/tarpf/TarpFHeader.msg:29</tt> by nedtool.
  * <pre>
  * class TarpFHeader extends NetworkHeaderBase
  * {
  *     L3Address srcAddr;
  *     L3Address destAddr;
- *     int ttl = 1; 	// the maximum length of the path that the packet is allowed to travel expressed as the number of hops (r)
+ *     int hopCount = 0;
+ *     int hopBack = 1;
  *     unsigned long seqNum = 0;	// the sequence number of the packet within its session (n)
  *     IpProtocolId protocolId;
  *     B payloadLengthField;
@@ -69,7 +70,8 @@ class INET_API TarpFHeader : public ::inet::NetworkHeaderBase
   protected:
     L3Address srcAddr;
     L3Address destAddr;
-    int ttl = 1;
+    int hopCount = 0;
+    int hopBack = 1;
     unsigned long seqNum = 0;
     inet::IpProtocolId protocolId = static_cast<inet::IpProtocolId>(-1);
     B payloadLengthField = B(-1);
@@ -97,8 +99,10 @@ class INET_API TarpFHeader : public ::inet::NetworkHeaderBase
     virtual const L3Address& getDestAddr() const;
     virtual L3Address& getDestAddrForUpdate() { handleChange();return const_cast<L3Address&>(const_cast<TarpFHeader*>(this)->getDestAddr());}
     virtual void setDestAddr(const L3Address& destAddr);
-    virtual int getTtl() const;
-    virtual void setTtl(int ttl);
+    virtual int getHopCount() const;
+    virtual void setHopCount(int hopCount);
+    virtual int getHopBack() const;
+    virtual void setHopBack(int hopBack);
     virtual unsigned long getSeqNum() const;
     virtual void setSeqNum(unsigned long seqNum);
     virtual inet::IpProtocolId getProtocolId() const;
