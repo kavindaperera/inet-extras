@@ -292,6 +292,13 @@ bool TarpF::isSubOptimal(const TarpFHeader *msg) {
         spdCache[msg->getSourceAddress()] = SpdEntry( ( 1 + msg->getHopCount()), simTime() + spdDelTime);
 
     }
+//    else if (spdCache[msg->getSourceAddress()].hopCount > ( 1 + msg->getHopCount())) {
+//
+//        spdCache[msg->getSourceAddress()] = SpdEntry( ( 1 + msg->getHopCount()), simTime() + spdDelTime);
+//
+//    }
+
+
 
     if ( msg->getHopBack() < (spdCache[msg->getDestinationAddress()].hopCount  + 1 + msg->getHopCount())) {
 
