@@ -39,7 +39,7 @@ void TarpF::initialize(int stage) {
         nbDataPacketsSent = 0;
         nbDataPacketsForwarded = 0;
         nbHops = 0;
-        nbSPD = 0;
+        nbSpdDrops = 0;
 
         //parameters
         headerLength = par("headerLength");
@@ -54,6 +54,7 @@ void TarpF::initialize(int stage) {
             // settings duplicate discard cache parameters
             ddMaxEntries = par("ddMaxEntries");
             ddDelTime = par("ddDelTime");
+
             EV << "ddMaxEntries = " << ddMaxEntries << " ddDelTime = "
                       << ddDelTime << endl;
 
@@ -63,6 +64,9 @@ void TarpF::initialize(int stage) {
             // settings spd cache parameters
             spdMaxEntries = par("spdMaxEntries");
             spdDelTime = par("spdDelTime");
+            slack = par("slack");
+            relax = par("relax");
+
             EV << "spdMaxEntries = " << spdMaxEntries << " spdDelTime = "
                       << spdDelTime << endl;
 
@@ -96,7 +100,7 @@ void TarpF::finish() {
     } else {
         recordScalar("meanNbHops", 0);
     }
-    recordScalar("nbSPD", nbSPD);
+    recordScalar("nbSpdDrops", nbSpdDrops);
 }
 
 void TarpF::handleUpperPacket(Packet *packet) {
@@ -191,7 +195,7 @@ void TarpF::handleLowerPacket(Packet *packet) {
 
                 // SPD rule
                 if (isSubOptimal(tarpfHeader.get())) {
-                    nbSPD++;
+                    nbSpdDrops++;
                     delete packet;
                     return;
                 }
@@ -300,7 +304,7 @@ bool TarpF::isSubOptimal(const TarpFHeader *msg) {
 
 
 
-    if ( msg->getHopBack() < (spdCache[msg->getDestinationAddress()].hopCount  + 1 + msg->getHopCount())) {
+    if ( (msg->getHopBack() + slack) < (spdCache[msg->getDestinationAddress()].hopCount  + 1 + msg->getHopCount())) {
 
         EV << "Sub Optimal Path: Hmax= "
                   << msg->getHopBack()

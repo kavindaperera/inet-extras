@@ -104,11 +104,14 @@ protected:
     /** @brief Time after which a Sub-optimal Path Discard entry can be deleted*/
     simtime_t spdDelTime;
 
+    unsigned int slack = 0;
+    unsigned int relax = 0;
+
 
     long nbDataPacketsReceived = 0;
     long nbDataPacketsSent = 0;
     long nbDataPacketsForwarded = 0;
-    long nbSPD = 0;
+    long nbSpdDrops = 0;
     long nbHops = 0;
 
 public:

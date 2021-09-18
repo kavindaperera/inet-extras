@@ -42,7 +42,7 @@ simple TarpF extends NetworkProtocolBase like INetworkProtocol
         // Time after which a duplicate discard cache entry can be deleted.
         int ddDelTime @unit(s) = default(100 s); 
         
-        // time-to-live () used for this module expressed in  number of hops.
+        // time-to-live (max hop count) used for this module expressed in  number of hops.
         int maxHopCount = default(10); 
         
         bool spdRule = default(true); 
@@ -50,6 +50,10 @@ simple TarpF extends NetworkProtocolBase like INetworkProtocol
         int spdMaxEntries = default(100); 
         
         int spdDelTime @unit(s) = default(100 s); 
+        
+        // SPD Rule fuzzy Params
+        int slack = default(1);
+        int relax = default(0);        
         
         @class(TarpF);
         
