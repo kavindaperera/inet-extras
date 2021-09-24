@@ -149,7 +149,10 @@ void TarpF::handleLowerPacket(Packet *packet) {
         if (interfaceTable->isLocalAddress(
                 tarpfHeader->getDestinationAddress())) {
 
-            EV << " data msg for me! send to Upper" << endl;
+            EV << " data msg for me! send to Upper | hopCount= " << (tarpfHeader->getHopCount()+1) << endl;
+
+            isSubOptimal(tarpfHeader.get());
+
             nbHops = nbHops + (1 + tarpfHeader->getHopCount());
             decapsulate(packet);
             sendUp(packet);
@@ -283,6 +286,7 @@ bool TarpF::isSubOptimal(const TarpFHeader *msg) {
 
         if (it->second.delTime < simTime()) {
 
+            EV << "Reset spdCache: delTime= " << it->second.delTime << " < current: " << simTime() << endl;
             EV << "Reset spdCache: " << it->first << " current: " << it->second.hopCount << endl;
 
             it->second.hopCount = 0;
@@ -295,6 +299,8 @@ bool TarpF::isSubOptimal(const TarpFHeader *msg) {
 
         spdCache[msg->getSourceAddress()] = SpdEntry( ( 1 + msg->getHopCount()), simTime() + spdDelTime);
 
+        EV << "New spdCache: " << msg->getSourceAddress() << " hopCount: " << ( 1 + msg->getHopCount()) << endl;
+
     }
 //    else if (spdCache[msg->getSourceAddress()].hopCount > ( 1 + msg->getHopCount())) {
 //
@@ -306,8 +312,8 @@ bool TarpF::isSubOptimal(const TarpFHeader *msg) {
 
     if ( (msg->getHopBack() + slack) < (spdCache[msg->getDestinationAddress()].hopCount  + 1 + msg->getHopCount())) {
 
-        EV << "Sub Optimal Path: Hmax= "
-                  << msg->getHopBack()
+        EV << "Sub Optimal Path: Hb= "
+                  << msg->getHopBack() << " + slack= " << slack
                   << " < Hc= " << (1 + msg->getHopCount()) << " + " << "Hnk=" << spdCache[msg->getDestinationAddress()].hopCount
                   << endl;
 
@@ -369,13 +375,10 @@ void TarpF::encapsulate(Packet *appPkt) {
     int Hb = (hopLimitReq != nullptr) ? hopLimitReq->getHopLimit() : -1;
     delete hopLimitReq;
 
-    if (Hb == -1)
-        Hb = maxHopCount;
 
     pkt->setSeqNum(seqNum);
     seqNum++;
 
-    pkt->setHopBack(Hb);
 
     auto addressReq = appPkt->findTag<L3AddressReq>();
     if (addressReq == nullptr) {
@@ -390,6 +393,17 @@ void TarpF::encapsulate(Packet *appPkt) {
 
     pkt->setSrcAddr(myNetwAddr);
     pkt->setDestAddr(netwAddr);
+
+    if (Hb == -1){
+        if (spdCache[pkt->getDestAddr()].hopCount == 0){
+            Hb = maxHopCount;
+        }
+        else {
+            Hb = spdCache[pkt->getDestAddr()].hopCount;
+        }
+    }
+
+    pkt->setHopBack(Hb);
 
     EV << " netw " << myNetwAddr << " sending packet" << endl;
 
