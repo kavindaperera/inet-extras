@@ -781,6 +781,8 @@ void Udp::handleUpperPacket(Packet *packet)
         l3Protocol = &Protocol::ipv4;
     else if (destAddr.getType() == L3Address::IPv6)
         l3Protocol = &Protocol::ipv6;
+    else if (destAddr.getType() == L3Address::MODULEPATH)
+        l3Protocol = &Protocol::tarpf; // TODO - added for TarpF Simulation
     else
         l3Protocol = &Protocol::nextHopForwarding;
 
