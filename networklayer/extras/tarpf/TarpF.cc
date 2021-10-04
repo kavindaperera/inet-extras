@@ -143,7 +143,7 @@ void TarpF::handleLowerPacket(Packet *packet) {
 
     auto tarpfHeader = packet->peekAtFront<TarpFHeader>();
 
-    if (notBroadcasted(tarpfHeader.get())) {
+    if (notBroadcasted(tarpfHeader.get())) { // DD Rule
 
         // if msg is for me -> sendUp
         if (interfaceTable->isLocalAddress(
@@ -151,7 +151,7 @@ void TarpF::handleLowerPacket(Packet *packet) {
 
             EV << " data msg for me! send to Upper | hopCount= " << (tarpfHeader->getHopCount()+1) << endl;
 
-            isSubOptimal(tarpfHeader.get());
+            isSubOptimal(tarpfHeader.get()); //add packet to SPD cache
 
             nbHops = nbHops + (1 + tarpfHeader->getHopCount());
             decapsulate(packet);
@@ -160,38 +160,38 @@ void TarpF::handleLowerPacket(Packet *packet) {
         }
 
         // else if broadcast message
-//        else if (tarpfHeader->getDestinationAddress().isBroadcast()) {
-//
-//            // check ttl and rebroadcast
-//            if (tarpfHeader->getTtl() > 1) {
-//                EV << " data msg BROADCAST! ttl = " << tarpfHeader->getTtl()
-//                          << " > 1 -> rebroadcast msg & send to upper\n";
-//
-//                auto dMsg = packet->dup();
-//                auto newTarpFHeader = dMsg->removeAtFront<TarpFHeader>();
-//                newTarpFHeader->setTtl(newTarpFHeader->getTtl() - 1);
-//                dMsg->insertAtFront(newTarpFHeader);
-//                setDownControlInfo(dMsg, MacAddress::BROADCAST_ADDRESS);
-//                sendDown(dMsg);
-//                nbDataPacketsForwarded++;
-//            } else
-//                EV << " max hops reached (ttl = " << tarpfHeader->getTtl()
-//                          << ") -> only send to upper\n";
-//
-//            // message has to be forwarded to upper layer
-//            nbHops = nbHops + (defaultTtl + 1 - tarpfHeader->getTtl());
-//            decapsulate(packet);
-//            sendUp(packet);
-//            nbDataPacketsReceived++;
-//
-//        }
+        else if (tarpfHeader->getDestinationAddress().isBroadcast()) {
 
-// else not for me -> rebroadcast
+            // check max-hop-count and rebroadcast
+            if (tarpfHeader->getHopCount() > 1) {
+                EV << " data msg BROADCAST! ttl = " << tarpfHeader->getHopCount()
+                          << " > 1 -> rebroadcast msg & send to upper\n";
+
+                auto dMsg = packet->dup();
+                auto newTarpFHeader = dMsg->removeAtFront<TarpFHeader>();
+                newTarpFHeader->setHopCount(newTarpFHeader->getHopCount() - 1);
+                dMsg->insertAtFront(newTarpFHeader);
+                setDownControlInfo(dMsg, MacAddress::BROADCAST_ADDRESS);
+                sendDown(dMsg);
+                nbDataPacketsForwarded++;
+            } else
+                EV << " max hops reached (ttl = " << tarpfHeader->getHopCount()
+                          << ") -> only send to upper\n";
+
+            // message has to be forwarded to upper layer
+            nbHops = nbHops + (maxHopCount + 1 - tarpfHeader->getHopCount());
+            decapsulate(packet);
+            sendUp(packet);
+            nbDataPacketsReceived++;
+
+        }
+
+        // else not for me -> rebroadcast
         else {
-            // LHC Rule : check ttl and rebroadcast
+            // LHC Rule : check hop-count and rebroadcast
             if (tarpfHeader->getHopCount() < maxHopCount) {
 
-                EV << " data msg not for me! hopCount = " << tarpfHeader->getHopCount()
+                EV << " data msg not for me! | to = " << tarpfHeader->getDestinationAddress() << "  | hopCount = " << tarpfHeader->getHopCount()
                           << " < " << maxHopCount << " forward" << endl;
 
                 decapsulate(packet);
@@ -234,7 +234,7 @@ void TarpF::handleLowerPacket(Packet *packet) {
         }
 
     } else {
-        EV << " data msg already BROADCASTed! delete msg\n";
+        EV << " data msg already BROADCASTed! delete msg desAddr = " << tarpfHeader->getDestinationAddress() << endl;
         delete packet;
     }
 
@@ -309,7 +309,6 @@ bool TarpF::isSubOptimal(const TarpFHeader *msg) {
 //    }
 
 
-
     if ( (msg->getHopBack() + slack) < (spdCache[msg->getDestinationAddress()].hopCount  + 1 + msg->getHopCount())) {
 
         EV << "Sub Optimal Path: Hb= "
@@ -330,7 +329,7 @@ bool TarpF::isSubOptimal(const TarpFHeader *msg) {
  **/
 void TarpF::decapsulate(Packet *packet) {
 
-    EV << " decapsulating...\n";
+    EV << " decapsulating: " << packet << endl;
 
     auto tarpfHeader = packet->popAtFront<TarpFHeader>();
     auto payloadLength = tarpfHeader->getPayloadLengthField();
@@ -354,7 +353,7 @@ void TarpF::decapsulate(Packet *packet) {
     addressInd->setDestAddress(tarpfHeader->getDestinationAddress());
     packet->addTagIfAbsent<HopLimitInd>()->setHopLimit(maxHopCount - tarpfHeader->getHopCount());
 
-    EV << " pkt decapsulated\n";
+    EV << " pkt decapsulated: " << packet << endl;
 
 }
 
