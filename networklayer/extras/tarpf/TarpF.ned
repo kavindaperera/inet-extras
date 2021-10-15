@@ -56,5 +56,6 @@ simple TarpF extends NetworkProtocolBase like INetworkProtocol
         int relax = default(0);        
         
         @class(TarpF);
+        @signal[packetsForwarded](type=inet::Packet);
         
 }

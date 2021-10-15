@@ -172,6 +172,7 @@ void TarpF::handleLowerPacket(Packet *packet) {
                 newTarpFHeader->setHopCount(newTarpFHeader->getHopCount() - 1);
                 dMsg->insertAtFront(newTarpFHeader);
                 setDownControlInfo(dMsg, MacAddress::BROADCAST_ADDRESS);
+                emit(packetsForwardedSignal, dMsg);
                 sendDown(dMsg);
                 nbDataPacketsForwarded++;
             } else
@@ -191,7 +192,9 @@ void TarpF::handleLowerPacket(Packet *packet) {
             // LHC Rule : check hop-count and rebroadcast
             if (tarpfHeader->getHopCount() < maxHopCount) {
 
-                EV << " data msg not for me! | to = " << tarpfHeader->getDestinationAddress() << "  | hopCount = " << tarpfHeader->getHopCount()
+                EV << " data msg not for me! | to = " << tarpfHeader->getDestinationAddress()
+                        << " | seqNum = " << tarpfHeader->getSeqNum()
+                        << " | hopCount = " << tarpfHeader->getHopCount()
                           << " < " << maxHopCount << " forward" << endl;
 
                 decapsulate(packet);
@@ -220,8 +223,9 @@ void TarpF::handleLowerPacket(Packet *packet) {
                     delete pCtrlInfo;
 
                 setDownControlInfo(packetCopy, MacAddress::BROADCAST_ADDRESS);
-                sendDown(packetCopy);
 
+                emit(packetsForwardedSignal, packetCopy);
+                sendDown(packetCopy);
                 nbDataPacketsForwarded++;
                 delete packet;
 
