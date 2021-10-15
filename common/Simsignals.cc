@@ -102,6 +102,7 @@ simsignal_t packetReceivedFromPeerSignal = cComponent::registerSignal("packetRec
 
 simsignal_t packetSentSignal = cComponent::registerSignal("packetSent");
 simsignal_t packetReceivedSignal = cComponent::registerSignal("packetReceived");
+simsignal_t packetsForwardedSignal = cComponent::registerSignal("packetsForwarded");
 
 simsignal_t packetPushedSignal = cComponent::registerSignal("packetPushed");
 simsignal_t packetPoppedSignal = cComponent::registerSignal("packetPopped");
