@@ -312,16 +312,16 @@ bool TarpF::isSubOptimal(const TarpFHeader *msg) {
 //
 //    }
 
+    if(spdCache[msg->getDestinationAddress()].hopCount > 0) {
+        if ( (msg->getHopBack() + slack) < (spdCache[msg->getDestinationAddress()].hopCount  + 1 + msg->getHopCount())) {
 
-    if ( (msg->getHopBack() + slack) < (spdCache[msg->getDestinationAddress()].hopCount  + 1 + msg->getHopCount())) {
+            EV << "Sub Optimal Path: Hb= "
+                      << msg->getHopBack() << " + slack= " << slack
+                      << " < Hc= " << (1 + msg->getHopCount()) << " + " << "Hnk=" << spdCache[msg->getDestinationAddress()].hopCount
+                      << endl;
 
-        EV << "Sub Optimal Path: Hb= "
-                  << msg->getHopBack() << " + slack= " << slack
-                  << " < Hc= " << (1 + msg->getHopCount()) << " + " << "Hnk=" << spdCache[msg->getDestinationAddress()].hopCount
-                  << endl;
-
-        return true;
-
+            return true;
+        }
     }
 
     return false;
